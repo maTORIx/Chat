@@ -4,8 +4,10 @@ import {
     useState
 } from "react"
 
-const ASSISSTANT_NAME = "risa"
-const USER_NAME = "user(matorix)"
+import config from "../config.json"
+
+const ASSISSTANT_NAME = config.asssitant_name
+const USER_NAME = `user(${config.username})`
 
 interface Chat {
     speaker: string
@@ -109,7 +111,7 @@ const App = (props: { initialChats?: Chat[], id: string }) => {
                 saveChats(props.id, newChats)
             }}>
                 <div className="input">
-                    <p>user(matorix):</p>
+                    <p>{USER_NAME}:</p>
                     <textarea value={text} onChange={(e) => {
                         setText(e.target.value)
                     }}></textarea>

@@ -19,11 +19,11 @@ def index():
     id = request.args.get('id', '', str)
     if id == "":
         return redirect(url_for('index', id=str(uuid.uuid4())))
-    return app.send_static_file('index.html')
+    return app.send_static_file('webapp/index.html')
 
 @app.route('/style.css')
 def style():
-    return app.send_static_file('style.css')
+    return app.send_static_file('webapp/style.css')
 
 @app.route('/script.js')
 def script():

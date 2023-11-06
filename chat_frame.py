@@ -68,7 +68,7 @@ class ChatFrame:
     @staticmethod
     def from_text(text_data):
         str_chats = text_data.split("\n\n")
-        data = ChatFrame([])
+        chats = ChatFrame([])
         for str_chat in str_chats:
             if str_chat == "":
                 continue
@@ -76,13 +76,15 @@ class ChatFrame:
             speaker = splited_chat[0][:-1]
             text = "\n".join(splited_chat[1:])
             chat = Chat(speaker, [text])
-            data.append(chat)
-        return data
+            chats.append(chat)
+        if len(chats.data) >= 3:
+            chats.assistant_name = chats.data[2].speaker
+        return chats
     
     def to_text(self):
         return self.__str__()
     
-    def ask(self, text, name="matorix"):
+    def ask(self, text, name):
         self.append(Chat(f"user({name})", [text]))
         return self.to_text() + "\n\nrisa:\n"
     
