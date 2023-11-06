@@ -1,0 +1,21 @@
+.container {
+    padding: 1rem;
+    width: min(calc(100% - 2rem), 1200px);
+    margin: 0 auto;
+}
+
+.input {
+    margin-top: 10px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.input p {
+    width: 110px;
+    text-align: left;
+    padding: 2px 0 0 0;
+}
+
+.input textarea {
+    width: calc(100% - 100px);
+}
