@@ -6,7 +6,7 @@ import chat_frame
 import uuid
 
 app = Flask(__name__)
-app.static_folder = '.'
+app.static_folder = str(Path(__file__).parent)
 PROMPT_HISTORY_DIR = Path(__file__).parent / "history"
 LLM_MAX_LENGTH = 256
 
@@ -35,12 +35,17 @@ def generate():
     data = request.get_json()
     prompt = chat_frame.ChatFrame.from_list(data).to_text()
     prompt += "\n\nrisa:\n"
-    return Response(llm.generate(prompt, LLM_MAX_LENGTH), mimetype='text/plain')
+    return Response(llm.generate(
+        prompt,
+        LLM_MAX_LENGTH,
+        ["\n\n", f"username({llm.config.get('username', 'matorix')})"]
+    ), mimetype='text/plain')
 
 @app.route('/chats/<id>', methods=['GET'])
 def get_prompt(id):
     if id == "" or not (PROMPT_HISTORY_DIR / id).exists():
-        data = chat_frame.ChatFrame.from_text(chat_frame.DEFAULT_PROMPT).to_list()
+        prompt_path = llm.config.get("default_prompt", "./prompts/default.txt")
+        data = chat_frame.ChatFrame.from_txtfile(prompt_path).to_list()
     else:
         with open(PROMPT_HISTORY_DIR / id, "r") as f:
             data = json.load(f)

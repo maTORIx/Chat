@@ -2,5 +2,6 @@
     "model_path": "",
     "max_context_length": 4096,
     "username": "matorix",
-    "asssitant_name": "risa"
+    "asssitant_name": "risa",
+    "default_prompt": "./prompts/default.txt"
 }

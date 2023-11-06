@@ -1,4 +1,4 @@
-from chat_frame import ChatFrame, DEFAULT_PROMPT
+from chat_frame import ChatFrame
 from llama_cpp import Llama
 from pathlib import Path
 import json
@@ -6,6 +6,7 @@ import os
 
 DEFAULT_MODEL_URL = "https://huggingface.co/TheBloke/Yarn-Mistral-7B-128k-GGUF/resolve/main/yarn-mistral-7b-128k.Q5_K_M.gguf"
 CONFIG_PATH = Path(__file__).parent / "config.json"
+os.chdir(Path(__file__).parent)
 
 def load_config():
     if not CONFIG_PATH.exists():
@@ -33,20 +34,20 @@ llm = load_model(config.get("model_path", ""), config.get("max_context_length", 
 USER_NAME = config.get("username", "john")
 ASSISTANT_NAME = config.get("assistant_name", "risa")
 
-def generate(prompt, max_length):
+def generate(prompt, max_length, separators=["\n\n", "user(matorix):"]):
     generator =  llm(
         prompt,
         max_tokens=max_length,
         temperature=0.7,
         top_p=0.95,
-        stop=["\n\n", "user(matorix):"], stream=True)
+        stop=separators, stream=True)
     for token in generator:
         yield token["choices"][0]["text"]
 
 
 def main():
     username = USER_NAME
-    chats = ChatFrame.from_text(DEFAULT_PROMPT, ASSISTANT_NAME)
+    chats = ChatFrame.from_txtfile(config.get("default_prompt", "./prompts/default.txt"), ASSISTANT_NAME)
     while True:
         text = input(f"user({username}): ")
         prompt_txt = chats.ask(text, username)
