@@ -25,9 +25,9 @@ def load_model(model_path, max_context_length=128000):
         config["model_path"] = str(dest)
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
-        return Llama(str(dest), n_ctx=max_context_length)
+        return Llama(str(dest.expanduser().absolute()), n_ctx=max_context_length)
     else:
-        return Llama(model_path, n_ctx=128000)
+        return Llama(str(Path(model_path).expanduser().absolute()), n_ctx=128000)
 
 config = load_config()
 llm = load_model(config.get("model_path", ""), config.get("max_context_length", 4096))
@@ -47,12 +47,12 @@ def generate(prompt, max_length, separators=["\n\n", "user(matorix):"]):
 
 def main():
     username = USER_NAME
-    chats = ChatFrame.from_txtfile(config.get("default_prompt", "./prompts/default.txt"), ASSISTANT_NAME)
+    chats = ChatFrame.from_txtfile(config.get("default_prompt", "./prompts/default.txt"))
     while True:
-        text = input(f"user({username}): ")
+        text = input(f"user({username}):\n")
         prompt_txt = chats.ask(text, username)
         generated = ""
-        print("")
+        print("\nrisa:")
         for token in generate(prompt_txt, 128):
             generated += token
             print(token, end="")

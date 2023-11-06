@@ -1,7 +1,8 @@
 import React, { ChangeEvent, FormEvent } from "react"
 import ReactDOM from "react-dom"
 import {
-    useState
+    useState,
+    useEffect
 } from "react"
 
 import config from "../config.json"
@@ -60,6 +61,7 @@ const generate = async (chats: Chat[], streamingCallback?: (token: string, gener
             break
         }
         const token = decoder.decode(value)
+        console.log(token)
         generated += token
         if (streamingCallback) {
             streamingCallback(token, generated)
@@ -69,24 +71,79 @@ const generate = async (chats: Chat[], streamingCallback?: (token: string, gener
     return chats.concat({ "speaker": ASSISSTANT_NAME, "text": [generated] })
 }
 
+const continue_generate = async (chats: Chat[], streamingCallback?: (token: string, generated: string) => void): Promise<Chat[]> => {
+    const resp = await fetch("/continue", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(chats)
+    })
+    const reader = resp.body?.getReader()
+    if (!reader) {
+        throw new Error("Failed to get reader")
+    }
+    const decoder = new TextDecoder()
+    let generated = chats[chats.length - 1].text[0]
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+            break
+        }
+        const token = decoder.decode(value)
+        console.log(token)
+        generated += token
+        if (streamingCallback) {
+            streamingCallback(token, generated)
+        }
+    }
+    console.log(generated)
+    let newChats = Array.from(chats)
+    newChats[newChats.length - 1].text[0] = generated
+    return newChats
+}
+
 const Chat = (props: ChatProps) => {
+    const [text, setText] = useState<string>(props.chat.text.join("\n---\n"))
+    const [editing, setEditing] = useState<boolean>(false)
+
+    useEffect(() => {
+        setText(props.chat.text.join("\n---\n"))
+        setEditing(false)
+    }, [props.chat.speaker, props.chat.text])
+
     return (
         <div className="chat">
-            <p>{props.chat.speaker}:</p>
-            <p>{props.chat.text[0]}</p>
-            <p> </p>
+            <div className="header">
+                <p>{props.chat.speaker}:</p>
+                <div className="buttons">
+                    <button className="small" onClick={() => {
+                        if (editing) {
+                            props.onChange({ speaker: props.chat.speaker, text: text.split("\n---\n").map((t) => t.trim()) })
+                        }
+                        setEditing(!editing)
+                    }}>
+                        { editing ? <span className="icon">done</span> : <span className="icon">edit</span>}
+                    </button>
+                    { editing ? <button className="small" onClick={() => { setText((text) => "\n---\n" + text) }}><span className="icon">add</span></button> : null}
+                </div>
+            </div>
+            {
+                editing ? <textarea className="content" onChange={(e) => setText(e.target.value)} value={text}></textarea>
+                : <p className="content">{text.split("\n---\n")[0].trim()}</p>
+            }
         </div>
     )
 }
 
-const Chats = (props: ChatsProps, onChange?: (chats: Chat[]) => void) => {
+const Chats = (props: ChatsProps) => {
     return (
         <div className="chats">
             {props.chats.map((chat, i) => {
                 return <Chat key={i} chat={chat} onChange={(chat) => {
                     let newChats = Array.from(props.chats)
                     newChats[i] = chat
-                    if (onChange) onChange(newChats)
+                    if (props.onChange) props.onChange(newChats)
                 }} />
             })}
         </div>
@@ -97,27 +154,56 @@ const Chats = (props: ChatsProps, onChange?: (chats: Chat[]) => void) => {
 const App = (props: { initialChats?: Chat[], id: string }) => {
     const [text, setText] = useState<string>("")
     const [chats, setChats] = useState<Chat[]>(props.initialChats || [])
+    const [generating, setGenerating] = useState<boolean>(false)
 
     return (
         <div>
-            <Chats chats={chats} />
+            <Chats chats={chats} onChange={(chats) => {
+                saveChats(props.id, chats)
+                setChats(chats)
+            }}/>
+            { !generating ? <button className="small" onClick={() => {
+                setGenerating(true)
+                continue_generate(chats, (token, generated) => {
+                    const generatedChat = { "speaker": ASSISSTANT_NAME, "text": [generated]}
+                    setChats(chats => {
+                        const newChats = Array.from(chats)
+                        newChats[newChats.length - 1] = generatedChat
+                        return newChats
+                    })
+                }).then((newChats) => {
+                    setChats(newChats)
+                    saveChats(props.id, newChats)
+                    setGenerating(false)
+                })
+            }}><span className="icon">edit_note</span></button> : null
+            }
+            
             <form onSubmit={async (e) => {
                 e.preventDefault()
+                setGenerating(true)
                 let newChats = chats.concat({ "speaker": USER_NAME, "text": [text] })
                 newChats = await generate(newChats, (token, generated) => {
                     setChats(newChats.concat({ "speaker": ASSISSTANT_NAME, "text": [generated] }))
                 })
                 setChats(newChats)
                 saveChats(props.id, newChats)
+                setText("")
+                setGenerating(false)
             }}>
                 <div className="input">
                     <p>{USER_NAME}:</p>
                     <textarea value={text} onChange={(e) => {
                         setText(e.target.value)
-                    }}></textarea>
+                    }} disabled={generating}></textarea>
                 </div>
-                <button className="right"><span className="icon">send</span></button>
+                <button className="right">
+                    {
+                        generating ? <span className="loading"/> : <span className="icon">send</span>
+                    }
+                </button>
             </form>
+
         </div>
     )
 }

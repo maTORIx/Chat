@@ -41,11 +41,22 @@ def generate():
         ["\n\n", f"username({llm.config.get('username', 'matorix')})"]
     ), mimetype='text/plain')
 
+
+@app.route('/continue', methods=['POST'])
+def continue_prompt():
+    data = request.get_json()
+    prompt = chat_frame.ChatFrame.from_list(data).to_text()
+    return Response(llm.generate(
+        prompt,
+        LLM_MAX_LENGTH,
+        ["\n\n", f"username({llm.config.get('username', 'matorix')})"]
+    ), mimetype='text/plain')
+
 @app.route('/chats/<id>', methods=['GET'])
 def get_prompt(id):
     if id == "" or not (PROMPT_HISTORY_DIR / id).exists():
-        prompt_path = llm.config.get("default_prompt", "./prompts/default.txt")
-        data = chat_frame.ChatFrame.from_txtfile(prompt_path).to_list()
+        prompt_path = Path(llm.config.get("default_prompt", "./prompts/default.txt")).expanduser().resolve()
+        data = chat_frame.ChatFrame.from_txtfile(str(prompt_path)).to_list()
     else:
         with open(PROMPT_HISTORY_DIR / id, "r") as f:
             data = json.load(f)

@@ -1,7 +1,7 @@
 {
-    "model_path": "",
+    "model_path": "~/models/LLM_gguf/japanese-stablelm-instruct-gamma-7b.Q5_K_M.gguf",
     "max_context_length": 4096,
     "username": "matorix",
     "asssitant_name": "risa",
-    "default_prompt": "./prompts/default.txt"
+    "default_prompt": "./prompts/jp_risa.txt"
 }
